@@ -1,0 +1,50 @@
+/** Approved silk-scroll PBR palette — ochre / sepia / daiqing / muted vermillion */
+export const PALETTE = {
+  // Warm ochre void — never pure black (P0 atmosphere)
+  bg: '#3d3124',
+  fog: '#6a5640',
+  parchment: '#cbb892',
+  earth: '#6e5840',
+  earthDark: '#4a3a2a',
+  earthWet: '#5a4834',
+  wood: '#7a5230',
+  woodMid: '#6a4528',
+  woodDark: '#4a3018',
+  woodWeathered: '#8a6a48',
+  woodLight: '#9a7048',
+  plaster: '#d2c0a0',
+  plasterWarm: '#c8b090',
+  roof: '#3e4a50',
+  roofDark: '#2c383e',
+  roofMid: '#45545a',
+  daiqing: '#4a5860',
+  stone: '#7a6e5c',
+  stoneDark: '#5a5044',
+  water: '#2e4848',
+  waterDeep: '#1e3438',
+  /**
+   * MeshReflector does `water * reflection`. Too dark and the arch
+   * disappears; too light and the plate-clear blows out to beige.
+   */
+  waterMirror: '#8d9892',
+  /** Darker than lit timber so the soffit reads as the bright shape in the water. */
+  skyReflect: '#4a3c30',
+  vermillion: '#9a4034',
+  vermillionMuted: '#8a4838',
+  cloth: '#5e6a50',
+  clothBlue: '#4a5868',
+  clothTan: '#9a8460',
+  clothGrey: '#6a6460',
+  clothOlive: '#6a7050',
+  skin: '#d8be9a',
+  thatch: '#8a7448',
+  umbrella: '#9a8060',
+  umbrellaRed: '#8a4438',
+  umbrellaCream: '#c8b090',
+  keyLight: '#ffe0b0',
+  fillLight: '#b0c0c8',
+  rimLight: '#ffe8c8',
+  hemiSky: '#eadcc0',
+  hemiGround: '#4a3c2c',
+  archFill: '#ffd8a8',
+} as const
