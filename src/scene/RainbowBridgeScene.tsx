@@ -11,9 +11,7 @@ import {
   type CameraPresetId,
 } from './cameras'
 import { ContactLayer } from './ContactLayer'
-import { HotspotHits } from './HotspotHits'
 import { ReflectiveWater } from './ReflectiveWater'
-import type { HotspotId } from './hotspots'
 
 type SceneProps = {
   controlsRef: MutableRefObject<CameraControlsType | null>
@@ -23,7 +21,6 @@ type SceneProps = {
   onBackdrop: (id: CameraPresetId) => void
   activePreset: CameraPresetId | null
   plateId: CameraPresetId
-  onSelectHotspot: (id: HotspotId) => void
 }
 
 /**
@@ -146,18 +143,12 @@ export function RainbowBridgeScene({
   onBackdrop,
   activePreset,
   plateId,
-  onSelectHotspot,
 }: SceneProps) {
   return (
     <>
       <PlateFriendlyRenderer />
       <ReflectiveWater plate={plateId} />
       <ContactLayer plate={plateId} />
-      <HotspotHits
-        plate={plateId}
-        enabled={!introPlaying}
-        onSelect={onSelectHotspot}
-      />
       <CameraControls
         ref={controlsRef}
         makeDefault

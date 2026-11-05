@@ -1,9 +1,8 @@
-import { createPortal, useThree } from '@react-three/fiber'
-import * as THREE from 'three'
+import { useEffect, useRef } from 'react'
 import type { CameraPresetId } from './cameras'
 import type { HotspotId } from './hotspots'
 
-/** Screen rects (x right, y down) over each plate's subject. Not drawn. */
+/** Screen rects (x right, y down, normalized) over each plate's subject. */
 const HITS: Record<
   CameraPresetId,
   { id: HotspotId; rect: [number, number, number, number]; order: number }[]
@@ -31,91 +30,93 @@ const HITS: Record<
   ],
 }
 
-function HitPlane({
-  rect,
-  id,
-  order,
-  enabled,
-  onSelect,
-  width,
-  height,
-}: {
-  rect: [number, number, number, number]
-  id: HotspotId
-  order: number
-  enabled: boolean
-  onSelect: (id: HotspotId) => void
-  width: number
-  height: number
-}) {
-  const [x0, y0, x1, y1] = rect
-  const cx = (x0 + x1) / 2
-  const cy = (y0 + y1) / 2
-  const z = -(1 - order * 0.02)
-  const scale = -z
-  return (
-    <mesh
-      position={[(cx - 0.5) * width * scale, (0.5 - cy) * height * scale, z]}
-      rotation={[0, Math.PI, 0]}
-      onClick={(e) => {
-        if (!enabled) return
-        e.stopPropagation()
-        onSelect(id)
-      }}
-      onPointerOver={(e) => {
-        e.stopPropagation()
-        document.body.style.cursor = 'pointer'
-      }}
-      onPointerOut={() => {
-        document.body.style.cursor = 'auto'
-      }}
-    >
-      <planeGeometry
-        args={[(x1 - x0) * width * scale, (y1 - y0) * height * scale]}
-      />
-      <meshBasicMaterial
-        transparent
-        opacity={0}
-        depthWrite={false}
-        depthTest={false}
-        side={THREE.DoubleSide}
-      />
-    </mesh>
-  )
-}
+const PRESS_SLOP = 6
 
+/**
+ * Screen-space hotspot picker (HTML listeners, not WebGL).
+ * Camera-portal meshes never got reliable R3F clicks under CameraControls.
+ */
 export function HotspotHits({
   plate,
   enabled,
   onSelect,
+  onMiss,
 }: {
   plate: CameraPresetId
   enabled: boolean
   onSelect: (id: HotspotId) => void
+  onMiss?: () => void
 }) {
-  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera
-  const size = useThree((s) => s.size)
-  const dist = 1
-  const vFov = ((camera.fov || 38) * Math.PI) / 180
-  const height = 2 * Math.tan(vFov / 2) * dist
-  const width = height * (size.width / Math.max(1, size.height))
-  const hits = HITS[plate]
+  const plateRef = useRef(plate)
+  const enabledRef = useRef(enabled)
+  const onSelectRef = useRef(onSelect)
+  const onMissRef = useRef(onMiss)
+  plateRef.current = plate
+  enabledRef.current = enabled
+  onSelectRef.current = onSelect
+  onMissRef.current = onMiss
 
-  return createPortal(
-    <group name="hotspot-hits">
-      {hits.map((hit) => (
-        <HitPlane
-          key={hit.id}
-          rect={hit.rect}
-          id={hit.id}
-          order={hit.order}
-          enabled={enabled}
-          onSelect={onSelect}
-          width={width}
-          height={height}
-        />
-      ))}
-    </group>,
-    camera,
-  )
+  useEffect(() => {
+    let sx = 0
+    let sy = 0
+    let moved = false
+    let tracking = false
+
+    const uiSelector =
+      'button, .info-panel, .preset-bar, .skip-btn, .concept-ref, a, input'
+
+    const onDown = (e: PointerEvent) => {
+      if (!enabledRef.current || e.button !== 0) return
+      const t = e.target as HTMLElement | null
+      if (t?.closest?.(uiSelector)) return
+      tracking = true
+      moved = false
+      sx = e.clientX
+      sy = e.clientY
+    }
+
+    const onMove = (e: PointerEvent) => {
+      if (!tracking) return
+      if (Math.hypot(e.clientX - sx, e.clientY - sy) > PRESS_SLOP) moved = true
+    }
+
+    const onUp = (e: PointerEvent) => {
+      if (!tracking) return
+      tracking = false
+      if (!enabledRef.current || moved) return
+      const t = e.target as HTMLElement | null
+      if (t?.closest?.(uiSelector)) return
+
+      const root = document.getElementById('root')
+      if (!root) return
+      const bounds = root.getBoundingClientRect()
+      if (bounds.width <= 0 || bounds.height <= 0) return
+      const nx = (e.clientX - bounds.left) / bounds.width
+      const ny = (e.clientY - bounds.top) / bounds.height
+      if (nx < 0 || ny < 0 || nx > 1 || ny > 1) return
+
+      const hits = [...HITS[plateRef.current]].sort((a, b) => b.order - a.order)
+      for (const hit of hits) {
+        const [x0, y0, x1, y1] = hit.rect
+        if (nx >= x0 && nx <= x1 && ny >= y0 && ny <= y1) {
+          onSelectRef.current(hit.id)
+          return
+        }
+      }
+      onMissRef.current?.()
+    }
+
+    window.addEventListener('pointerdown', onDown, true)
+    window.addEventListener('pointermove', onMove, true)
+    window.addEventListener('pointerup', onUp, true)
+    window.addEventListener('pointercancel', onUp, true)
+    return () => {
+      window.removeEventListener('pointerdown', onDown, true)
+      window.removeEventListener('pointermove', onMove, true)
+      window.removeEventListener('pointerup', onUp, true)
+      window.removeEventListener('pointercancel', onUp, true)
+    }
+  }, [])
+
+  return null
 }

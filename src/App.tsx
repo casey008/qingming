@@ -8,6 +8,7 @@ import {
   type CameraPresetId,
 } from './scene/cameras'
 import { RainbowBridgeScene } from './scene/RainbowBridgeScene'
+import { HotspotHits } from './scene/HotspotHits'
 import { HOTSPOTS, type HotspotId } from './scene/hotspots'
 
 const PRESET_ORDER: CameraPresetId[] = ['wide', 'bridgeCenter', 'waterUp']
@@ -185,6 +186,13 @@ export default function App() {
         </aside>
       )}
 
+      <HotspotHits
+        plate={plateId}
+        enabled={!introPlaying}
+        onSelect={selectHotspot}
+        onMiss={dismiss}
+      />
+
       <Canvas
         className="webgl"
         shadows
@@ -201,9 +209,6 @@ export default function App() {
           gl.shadowMap.type = PCFSoftShadowMap
           gl.setClearColor(0x000000, 0)
         }}
-        onPointerMissed={() => {
-          if (!introPlaying) dismiss()
-        }}
       >
         <Suspense fallback={null}>
           <RainbowBridgeScene
@@ -214,7 +219,6 @@ export default function App() {
             onBackdrop={setPlateId}
             activePreset={activePreset}
             plateId={plateId}
-            onSelectHotspot={selectHotspot}
           />
         </Suspense>
       </Canvas>
